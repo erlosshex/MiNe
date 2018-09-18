@@ -94,9 +94,7 @@ int main(int argc, char **argv)
 	printf("st :: %p\nsp :: %p\n", st, sp);
 	st->show();
 	sp->show();
-	//
-	char c;
-	cin >> c;
+
 	return 0;
 }
 
