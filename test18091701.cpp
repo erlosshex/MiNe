@@ -77,3 +77,26 @@ MySingleton* MySingleton::getInstance(const string &name) {
 void MySingleton::show() {
 	cout << "MySingleton" << endl;
 }
+
+
+// test smaple
+#include <iostream>
+#include <string>
+
+#include "MySingleton.h"
+
+using namespace std;
+
+int main(int argc, char **argv)
+{
+	MySingleton *st = MySingleton::getInstance("MySingletonA");
+	MySingleton *sp = MySingleton::getInstance("MySingletonB");
+	printf("st :: %p\nsp :: %p\n", st, sp);
+	st->show();
+	sp->show();
+	//
+	char c;
+	cin >> c;
+	return 0;
+}
+
