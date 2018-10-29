@@ -18,6 +18,9 @@ public:
 	virtual	void rotate() {
 		cout << "This is shape rotate()." << endl;
 	}
+	virtual void print() {
+		cout << "name : " << name << endl;
+	}
 };
 
 class circle : public shape {
@@ -41,6 +44,9 @@ int main(int argc, char **argv)
 	cout << "> " << typeid(typeid(s).name()).name() << endl;
 	string tempName = typeid(s).name();
 	cout << "> " << typeid(tempName).name() << endl;
+	s.print();
+	c.print();
+	ss.print();
 	//
 	char cc;
 	cin >> cc;
