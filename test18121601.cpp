@@ -52,6 +52,8 @@ public:
 	//
 
 	void setDaltaLen(double d);
+	
+	void setImageAndROI(Mat &img, Rect &roi);
 
 	void initilize();
 
@@ -127,6 +129,11 @@ private:
 
 void DetectEdges10::setDaltaLen(double d) {
 	deltaLen = d;
+}
+
+void DetectEdges10::setImageAndROI(Mat &img, Rect &roi) {
+	dealImage = img.clone();
+	dealBox = roi;
 }
 
 void DetectEdges10::initilize() {
@@ -303,6 +310,8 @@ void DetectEdges10::initilize() {
 				lut5SRight[i] = n - 255;
 		}
 	}
+	
+	deltaLen = 0;
 }
 
 /*********************** detect edges *****************************/
