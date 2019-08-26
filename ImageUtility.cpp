@@ -47,7 +47,12 @@ namespace ImageUtility {
 	int checkPointInRoiOfRect(const cv::Point &p, const cv::Rect &rect, double distThres = 0.0);
 	int checkPointInRoiOfRect(const cv::Point2f &p, const cv::Rect &rect, double distThres = 0.0);
 	int checkPointInRoiOfRect(const cv::Point2d &p, const cv::Rect &rect, double distThres = 0.0);
-
+	// template match
+	// match the pixels of a region
+	cv::Mat TemplateMatch(cv::Mat &img, cv::Mat &templ, int match_method, cv::Point &matchLoc, double &matchValue);
+	// match the shape of  a region
+	std::vector<cv::Point> ShapeMatch(cv::Mat &img, cv::Mat &templ, int match_method, int thres, cv::Point &matchLoc, double &matchValue);
+	int ShapeMatch(std::vector<cv::Point> &con, std::vector<cv::Point> &templ_con, int match_method);
 }
 
 //**************************************************************//
@@ -585,6 +590,86 @@ int ImageUtility::checkPointInRoiOfRect(const cv::Point2d & p, const cv::Rect & 
 	}
 
 	return res;
+}
+
+cv::Mat ImageUtility::TemplateMatch(cv::Mat & img, cv::Mat & templ, int match_method, cv::Point & matchLoc, double & matchValue)
+{
+	bool use_mask = false;
+
+	cv::Mat result, mask;
+
+	bool method_accepts_mask = (cv::TemplateMatchModes::TM_SQDIFF == match_method || match_method == cv::TemplateMatchModes::TM_CCORR_NORMED);
+
+	if (use_mask && method_accepts_mask){
+		matchTemplate(img, templ, result, match_method, mask);
+	}
+	else{
+		matchTemplate(img, templ, result, match_method);
+	}
+	/// Localizing the best match with minMaxLoc
+	double minVal;
+	double maxVal;
+	cv::Point minLoc;
+	cv::Point maxLoc;
+
+	minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat());
+
+	/// For SQDIFF and SQDIFF_NORMED, the best matches are lower values. For all the other methods, the higher the better
+	if (match_method == cv::TemplateMatchModes::TM_SQDIFF || match_method == cv::TemplateMatchModes::TM_SQDIFF_NORMED){
+		matchLoc = minLoc;
+		matchValue = minVal;
+	}
+	else{
+		matchLoc = maxLoc;
+		matchValue = maxVal;
+	}
+
+	return result;
+}
+
+std::vector<cv::Point> ImageUtility::ShapeMatch(cv::Mat & img, cv::Mat & templ, int match_method, int thres, cv::Point & matchLoc, double & matchValue)
+{
+	std::vector<std::vector<cv::Point> > contours;
+	std::vector<cv::Vec4i> hierarcy;
+
+	cv::findContours(templ, contours, hierarcy, cv::RetrievalModes::RETR_EXTERNAL, cv::ContourApproximationModes::CHAIN_APPROX_NONE);
+
+	cv::Mat binary_image;
+	cv::threshold(img, binary_image, thres, 255, cv::ThresholdTypes::THRESH_BINARY);
+
+	std::vector<std::vector<cv::Point> > contours2;
+	std::vector<cv::Vec4i> hierarcy2;
+
+	cv::findContours(binary_image, contours2, hierarcy2, cv::RetrievalModes::RETR_TREE, cv::ContourApproximationModes::CHAIN_APPROX_NONE);
+
+	double bestMatch = std::numeric_limits<double>::max();
+	double tempMatch = 0;
+
+	int bestIndex = -1;
+	int tempIndex = -1;
+
+	for (auto &con : contours2) {
+		tempIndex++;
+		tempMatch = cv::matchShapes(contours[0], con, match_method, 0.0);
+		if (tempMatch < bestMatch) {
+			bestMatch = tempMatch;
+			bestIndex = tempIndex;
+		}
+	}
+
+	std::vector<cv::Point> res = contours2[bestIndex];
+
+	cv::Moments m = cv::moments(res);
+	matchLoc.x = m.m10 / m.m00;
+	matchLoc.y = m.m01 / m.m00;
+
+	matchValue = bestMatch;
+}
+
+int ImageUtility::ShapeMatch(std::vector<cv::Point>& con, std::vector<cv::Point>& templ_con, int match_method)
+{
+	double matchScore = cv::matchShapes(templ_con, con, match_method, 0.0);
+	return matchScore;
 }
 
 int main(int argc, char **argv)
