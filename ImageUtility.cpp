@@ -664,6 +664,8 @@ std::vector<cv::Point> ImageUtility::ShapeMatch(cv::Mat & img, cv::Mat & templ, 
 	matchLoc.y = m.m01 / m.m00;
 
 	matchValue = bestMatch;
+	
+	return res;
 }
 
 int ImageUtility::ShapeMatch(std::vector<cv::Point>& con, std::vector<cv::Point>& templ_con, int match_method)
