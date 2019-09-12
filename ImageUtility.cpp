@@ -52,7 +52,9 @@ namespace ImageUtility {
 	cv::Mat TemplateMatch(cv::Mat &img, cv::Mat &templ, int match_method, cv::Point &matchLoc, double &matchValue);
 	// match the shape of  a region
 	std::vector<cv::Point> ShapeMatch(cv::Mat &img, cv::Mat &templ, int match_method, int thres, cv::Point &matchLoc, double &matchValue);
-	int ShapeMatch(std::vector<cv::Point> &con, std::vector<cv::Point> &templ_con, int match_method);
+	double ShapeMatch(std::vector<cv::Point> &con, std::vector<cv::Point> &templ_con, int match_method);
+	// calculate the circle-like similarity of a contour
+	double calculateCircleSimilarityOfContour(std::vector<cv::Point> &contour);
 }
 
 //**************************************************************//
@@ -229,8 +231,8 @@ void ImageUtility::getCrossPoint(cv::Vec4f *l1, cv::Vec4f *l2, cv::Point2f *p)
 		double x = (x2*vx1*vy2 - y2 * vx1*vx2 - x1 * vx2*vy1 + y1 * vx1*vx2) / operation;
 		double y = (x2*vy1*vy2 - y2 * vx2*vy1 - x1 * vy1*vy2 + y1 * vx1*vy2) / operation;
 
-		p->x = x;
-		p->y = y;
+		p->x = float(x);
+		p->y = float(y);
 	}
 	else {
 		p->x = -1;
@@ -275,8 +277,8 @@ void ImageUtility::getCrossPoint(const cv::Vec4f & l1, const cv::Vec4f & l2, cv:
 		double x = (x2*vx1*vy2 - y2 * vx1*vx2 - x1 * vx2*vy1 + y1 * vx1*vx2) / operation;
 		double y = (x2*vy1*vy2 - y2 * vx2*vy1 - x1 * vy1*vy2 + y1 * vx1*vy2) / operation;
 
-		p.x = x;
-		p.y = y;
+		p.x = float(x);
+		p.y = float(y);
 	}
 	else {
 		p.x = -1;
@@ -347,6 +349,7 @@ std::vector<cv::Point2d> ImageUtility::getCrossPointsOfLineRect(const cv::Vec4f 
 		}
 	}
 	catch (std::exception &e) {
+		std::cout << "Exception : " << e.what() << std::endl;
 		res.clear();
 	}
 
@@ -363,11 +366,11 @@ void ImageUtility::convertLinePoint2Vec(const cv::Point * p1, const cv::Point * 
 	double vx = p2x - p1x;
 	double vy = p2y - p1y;
 
-	(*l)[2] = p1x;
-	(*l)[3] = p1y;
+	(*l)[2] = float(p1x);
+	(*l)[3] = float(p1y);
 
-	(*l)[0] = vx / sqrt(vx*vx + vy * vy);
-	(*l)[1] = vy / sqrt(vx*vx + vy * vy);
+	(*l)[0] = float(vx / sqrt(vx*vx + vy * vy));
+	(*l)[1] = float(vy / sqrt(vx*vx + vy * vy));
 }
 
 void ImageUtility::convertLinePoint2Vec(const cv::Point2f *p1, const cv::Point2f *p2, cv::Vec4f *l)
@@ -380,11 +383,11 @@ void ImageUtility::convertLinePoint2Vec(const cv::Point2f *p1, const cv::Point2f
 	double vx = p2x - p1x;
 	double vy = p2y - p1y;
 
-	(*l)[2] = p1x;
-	(*l)[3] = p1y;
+	(*l)[2] = float(p1x);
+	(*l)[3] = float(p1y);
 
-	(*l)[0] = vx / sqrt(vx*vx + vy * vy);
-	(*l)[1] = vy / sqrt(vx*vx + vy * vy);
+	(*l)[0] = float(vx / sqrt(vx*vx + vy * vy));
+	(*l)[1] = float(vy / sqrt(vx*vx + vy * vy));
 }
 
 void ImageUtility::convertLinePoint2Vec(const cv::Point2d *p1, const cv::Point2d *p2, cv::Vec4f *l)
@@ -397,11 +400,11 @@ void ImageUtility::convertLinePoint2Vec(const cv::Point2d *p1, const cv::Point2d
 	double vx = p2x - p1x;
 	double vy = p2y - p1y;
 
-	(*l)[2] = p1x;
-	(*l)[3] = p1y;
+	(*l)[2] = float(p1x);
+	(*l)[3] = float(p1y);
 
-	(*l)[0] = vx / sqrt(vx*vx + vy * vy);
-	(*l)[1] = vy / sqrt(vx*vx + vy * vy);
+	(*l)[0] = float(vx / sqrt(vx*vx + vy * vy));
+	(*l)[1] = float(vy / sqrt(vx*vx + vy * vy));
 }
 
 void ImageUtility::getVerticesOfRect(const cv::Rect & rect, std::vector<cv::Point>& vertices)
@@ -428,10 +431,10 @@ void ImageUtility::getVerticesOfRect(const cv::Rect & rect, std::vector<cv::Poin
 
 	vertices.clear();
 
-	vertices.push_back(cv::Point2f(r_x, r_y));
-	vertices.push_back(cv::Point2f(r_x + r_w - 1, r_y));
-	vertices.push_back(cv::Point2f(r_x + r_w - 1, r_y + r_h - 1));
-	vertices.push_back(cv::Point2f(r_x, r_y + r_h - 1));
+	vertices.push_back(cv::Point2f(float(r_x), float(r_y)));
+	vertices.push_back(cv::Point2f(float(r_x + r_w - 1), float(r_y)));
+	vertices.push_back(cv::Point2f(float(r_x + r_w - 1), float(r_y + r_h - 1)));
+	vertices.push_back(cv::Point2f(float(r_x), float(r_y + r_h - 1)));
 }
 
 void ImageUtility::getVerticesOfRect(const cv::Rect & rect, std::vector<cv::Point2d>& vertices)
@@ -660,18 +663,21 @@ std::vector<cv::Point> ImageUtility::ShapeMatch(cv::Mat & img, cv::Mat & templ, 
 	std::vector<cv::Point> res = contours2[bestIndex];
 
 	cv::Moments m = cv::moments(res);
-	matchLoc.x = m.m10 / m.m00;
-	matchLoc.y = m.m01 / m.m00;
+	matchLoc.x = int(m.m10 / m.m00);
+	matchLoc.y = int(m.m01 / m.m00);
 
 	matchValue = bestMatch;
-	
-	return res;
 }
 
-int ImageUtility::ShapeMatch(std::vector<cv::Point>& con, std::vector<cv::Point>& templ_con, int match_method)
+double ImageUtility::ShapeMatch(std::vector<cv::Point>& con, std::vector<cv::Point>& templ_con, int match_method)
 {
 	double matchScore = cv::matchShapes(templ_con, con, match_method, 0.0);
 	return matchScore;
+}
+
+double ImageUtility::calculateCircleSimilarityOfContour(std::vector<cv::Point>& contour)
+{
+	return ((cv::contourArea(contour) * 4 * CV_PI) / (std::pow(cv::arcLength(contour, true), 2)));
 }
 
 int main(int argc, char **argv)
