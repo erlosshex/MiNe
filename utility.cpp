@@ -21,3 +21,37 @@ void getAllFiles(string path, vector<string>& files) {
 		_findclose(hFile);
 	}
 }
+
+bool getFileNameVecFromDir(const std::string &dirPath, std::vector<std::string> &fileNameVec, std::vector<std::string> &dirNameVec) {
+	bool res = false;
+
+	try {
+		fileNameVec.clear();
+		dirNameVec.clear();
+		intptr_t hFile = 0;
+		_finddata_t fileInfo;
+		std::string pathName, exdName;
+		if ((hFile = _findfirst(pathName.assign(dirPath).append("\\*").c_str(), &fileInfo)) == -1) {
+			return false;
+		}
+		do {
+			//std::cout << fileInfo.name << (fileInfo.attrib & _A_SUBDIR ? "[folder]" : "[file]") << std::endl;
+			std::string fileInfoName(fileInfo.name);
+			if (fileInfo.attrib & _A_SUBDIR) {
+				if (fileInfoName != "." && fileInfoName != "..") {
+					dirNameVec.push_back(fileInfoName);
+				}
+			}
+			else {
+				fileNameVec.push_back(fileInfoName);
+			}
+		} while ( _findnext(hFile, &fileInfo)== 0);
+		_findclose(hFile);
+		res = true;
+	}
+	catch (std::exception &e) {
+		res = false;
+	}
+
+	return res;
+}
